@@ -231,6 +231,7 @@ body {
 </div>
 
 <button class="sound-btn" id="writeBtn" style="bottom:4.5rem;right:1.5rem;" title="自分の言葉を書く" onclick="openWrite()">✏️</button>
+<button class="sound-btn" id="shareBtn" style="bottom:7.5rem;right:1.5rem;" title="この言葉をシェア" onclick="shareOnTwitter()">𝕏</button>
 
 <div id="writeModal" style="display:none;position:fixed;inset:0;z-index:30;background:rgba(250,248,245,0.97);backdrop-filter:blur(12px);padding:3rem 1.5rem;overflow-y:auto;">
   <button onclick="closeWrite()" style="position:fixed;top:1rem;right:1.5rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#aaa;">×</button>
@@ -384,6 +385,14 @@ otherIdxs.forEach((idx, i) => {
   });
   card.appendChild(wordsDiv);
   addHeart(card, idx);
+  const shareBtn = document.createElement('button');
+  shareBtn.textContent = '𝕏';
+  shareBtn.style.cssText = 'background:none;border:none;font-size:1rem;cursor:pointer;opacity:0.2;margin-left:0.5rem;';
+  shareBtn.title = 'シェア';
+  shareBtn.addEventListener('click', () => shareCardOnTwitter(e.words.replace(/\\n/g, '\n')));
+  shareBtn.addEventListener('mouseenter', () => shareBtn.style.opacity = '0.5');
+  shareBtn.addEventListener('mouseleave', () => shareBtn.style.opacity = '0.2');
+  card.appendChild(shareBtn);
   cardsEl.appendChild(card);
 
   // カードの絵を描く
@@ -549,6 +558,18 @@ function renderMyWords() {
     div.appendChild(date);
     list.appendChild(div);
   });
+}
+
+// --- Twitterシェア ---
+function shareOnTwitter() {
+  const heroWords = document.getElementById('heroWords').textContent.trim();
+  const text = heroWords + '\n\nhttps://yurukusa.github.io/komorebi/';
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareCardOnTwitter(wordsText) {
+  const text = wordsText + '\n\nhttps://yurukusa.github.io/komorebi/';
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
 }
 
 // --- 共有された言葉を表示 ---
