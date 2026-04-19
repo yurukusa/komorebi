@@ -6,336 +6,322 @@
 <title>こもれび</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
-  overflow: hidden;
-}
-
-.scene {
-  text-align: center;
-  max-width: 560px;
-  padding: 2rem;
-  opacity: 0;
-  animation: fadeIn 3s ease forwards;
-}
-
-.visual {
-  width: 100%;
-  aspect-ratio: 4/3;
-  border-radius: 12px;
-  margin-bottom: 2rem;
-}
-
-.words {
-  font-size: 1.15rem;
-  line-height: 2;
-  letter-spacing: 0.08em;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif;
+  background: #f8f6f3;
   color: #4a4a4a;
 }
 
-.words p {
-  margin-bottom: 0.8em;
+/* 全画面ヒーロー */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
-
-.date {
+.hero canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+  max-width: 520px;
+  opacity: 0;
+  animation: fadeUp 3s 0.5s ease forwards;
+}
+.hero-words {
+  font-size: 1.3rem;
+  line-height: 2.2;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+}
+.hero-words p { margin-bottom: 0.6em; }
+.hero-date {
   margin-top: 2rem;
   font-size: 0.8rem;
-  color: #b0b0b0;
+  color: rgba(255,255,255,0.5);
+}
+.scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.3);
+  font-size: 0.75rem;
+  animation: pulse 3s ease infinite;
+  z-index: 1;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
+/* 下のカード群 */
+.cards {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+.card {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 16px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 1s ease, transform 1s ease;
+}
+.card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.card canvas {
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+.card-words {
+  font-size: 1.05rem;
+  line-height: 2;
+  letter-spacing: 0.08em;
+  color: #5a5a5a;
+}
+.card-words p { margin-bottom: 0.5em; }
+
+/* 音ボタン */
+.sound-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+.sound-btn:hover { transform: scale(1.1); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
 }
 </style>
 </head>
 <body>
-<div class="scene">
-  <canvas class="visual" id="canvas"></canvas>
-  <div class="words" id="words"></div>
-  <div class="date" id="date"></div>
+
+<div class="hero">
+  <canvas id="heroCanvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-words" id="heroWords"></div>
+    <div class="hero-date" id="heroDate"></div>
+  </div>
+  <div class="scroll-hint">↓ もっと読む</div>
 </div>
 
+<div class="cards" id="cards"></div>
+
+<button class="sound-btn" id="soundBtn" title="環境音">🔇</button>
+
 <script>
-// --- 日替わりの言葉 ---
 const entries = [
-  {
-    words: "帰り道、猫がいた。\nそれだけで今日は勝ち。",
-    palette: ['#1a1a2e','#16213e','#0f3460','#e94560','#f5c469','#fceabb'],
-    sky: true
-  },
-  {
-    words: "布団に入った瞬間の\nあの「はぁー」って声。\nあれが一番正直な自分だと思う。",
-    palette: ['#2d3436','#636e72','#b2bec3','#dfe6e9','#a8d8ea','#f8f9fa'],
-    sky: false
-  },
-  {
-    words: "今日も関係なく\n空は暮れていく。\nなんだか、それが少し安心する。",
-    palette: ['#2c3e50','#2e4057','#048a81','#54c6eb','#8ee3ef','#f7f7f7'],
-    sky: true
-  },
-  {
-    words: "コンビニのおにぎり、うまい。\nそれでいい。",
-    palette: ['#0d1b2a','#1b263b','#415a77','#778da9','#e0e1dd','#c9ada7'],
-    sky: false
-  },
-  {
-    words: "誰にも言わなかったけど、\n今日ちょっとがんばった。\n自分だけ知ってる。",
-    palette: ['#355070','#6d597a','#b56576','#e56b6f','#eaac8b','#f8edeb'],
-    sky: false
-  },
-  {
-    words: "風が吹いた。\nそれだけのことが、妙にうれしい日もある。",
-    palette: ['#606c38','#283618','#fefae0','#dda15e','#bc6c25','#8fbc8f'],
-    sky: false
-  },
-  {
-    words: "夜が静かなのは、\n世界が明日のために\nいま息をしてるからだと思う。",
-    palette: ['#03045e','#023e8a','#0077b6','#0096c7','#48cae4','#caf0f8'],
-    sky: true
-  },
-  {
-    words: "雨の音。\nなにもしなくていい理由を\n空がくれた。",
-    palette: ['#434343','#5a5a5a','#7c8594','#a0b0c0','#c4d4e0','#e8ecf0'],
-    sky: false
-  },
-  {
-    words: "電車の窓に映った自分、\n思ったより\nちゃんとした顔してた。",
-    palette: ['#1b1b2f','#1f3044','#2a5a6a','#5ca08e','#a1d6b2','#f1f1e8'],
-    sky: false
-  },
-  {
-    words: "明日やろう。\nそう思えるってことは、\n明日が来ると信じてるってこと。",
-    palette: ['#2b2d42','#3d3f5c','#8d99ae','#d4a373','#edc4b3','#fefae0'],
-    sky: true
-  },
-  {
-    words: "缶コーヒー、あったかい。\n手のひらから\nじんわり生きてる感じがする。",
-    palette: ['#3d2b1f','#5c4033','#8b6f47','#c4a35a','#dbc9a0','#f5eedc'],
-    sky: false
-  },
-  {
-    words: "信号待ち。\n隣のおばあちゃんが\n鼻歌うたってた。\nちょっと笑った。",
-    palette: ['#264653','#2a6f5f','#2a9d8f','#e9c46a','#f4a261','#fdf4e8'],
-    sky: false
-  },
-  {
-    words: "月がでかい。\nそれだけで今日はいい日だった気がする。",
-    palette: ['#0a0a23','#141432','#1e1e50','#3a3a8c','#7070b8','#e0e0f0'],
-    sky: true
-  },
-  {
-    words: "お風呂のお湯に沈む瞬間。\nあ、今日おわった。って。\nそれが一番ほっとする。",
-    palette: ['#3a3a5c','#4a5a7a','#6a8aaa','#9ab8d8','#c8daea','#eaf2f8'],
-    sky: false
-  },
-  {
-    words: "朝、カーテン開けたら\n知らない鳥が鳴いてた。\nなんか得した。",
-    palette: ['#fdf6e3','#f5e6ca','#e8c170','#d4956b','#a3c4bc','#7eb8c9'],
-    sky: true
-  },
-  {
-    words: "傘、忘れた。\nでも走ったら走ったで\n雨ってちょっと気持ちいい。",
-    palette: ['#4a4a5a','#5a6070','#708090','#90a0b0','#b0c4de','#d0dae8'],
-    sky: false
-  },
-  {
-    words: "好きな曲を\nイヤホンで聴きながら歩く。\nその間だけ\n世界が自分のもの。",
-    palette: ['#1a1a2e','#2d2d44','#4a3f6b','#7b6fa0','#b8a9c9','#e8e0f0'],
-    sky: false
-  },
-  {
-    words: "冷蔵庫にプリンがある。\n昨日の自分、ナイス。",
-    palette: ['#fef9ef','#fceabb','#f8d49a','#e8b87a','#c8a070','#a08060'],
-    sky: false
-  },
-  {
-    words: "星がきれいな夜は\n悩みごとがちょっとバカバカしくなる。\nスケールが違いすぎて。",
-    palette: ['#050520','#0a0a40','#151560','#3030a0','#6060d0','#c0c0f0'],
-    sky: true
-  },
-  {
-    words: "なんにもしなかった日。\nでも息はしてた。\nそれでいいんじゃないの。",
-    palette: ['#e8e4e0','#d0ccc8','#b8b4b0','#a09c98','#888480','#f0ece8'],
-    sky: false
-  },
-  {
-    words: "スーパーの惣菜コーナーで\nめちゃくちゃ悩む。\nこの真剣さ、仕事でも出せたらな。",
-    palette: ['#f5f0e0','#e8d8b0','#d4c090','#c0a870','#a89060','#f8f4ec'],
-    sky: false
-  },
-  {
-    words: "古い友達からLINE来た。\n「元気？」だけ。\nそれだけで元気になるのズルい。",
-    palette: ['#2a4a3a','#3a6a50','#5a9a70','#80c090','#a8d8b0','#e0f0e4'],
-    sky: false
-  },
-  {
-    words: "洗濯物がよく乾いた。\nたったそれだけのことが\nめちゃくちゃ気持ちいい。",
-    palette: ['#e0f0ff','#c0e0f8','#80c0e8','#40a0d8','#2080b8','#f0f8ff'],
-    sky: true
-  },
-  {
-    words: "寝る前に「明日何食べよう」って考える。\nこれ、地味に幸せなんだと思う。",
-    palette: ['#1a1a30','#2a2a48','#3a3a60','#5a5a88','#8888b0','#c0c0d8'],
-    sky: false
-  },
-  {
-    words: "子どもが転んで泣いて\n3秒で笑ってた。\nあの切り替え見習いたい。",
-    palette: ['#fff8e7','#ffe8b0','#ffd080','#ffb860','#ff9840','#fff4e0'],
-    sky: false
-  },
-  {
-    words: "散歩してたら\n知らない花が咲いてた。\n名前は知らないけど\nきれいだった。",
-    palette: ['#2a402a','#3a5a38','#5a8a50','#80b868','#a8d890','#e0f0d8'],
-    sky: false
-  },
-  {
-    words: "疲れた日は\n何も考えずに空を見る。\n空はいつも\nちゃんとそこにある。",
-    palette: ['#1a2a4a','#2a4a6a','#4a7a9a','#7aaaca','#aadaea','#e0f0f8'],
-    sky: true
-  },
-  {
-    words: "ありがとう、って言われた。\nそれだけで\n今日やったことに\n意味ができた。",
-    palette: ['#4a3040','#6a4858','#9a7080','#c898a8','#e0c0c8','#f8e8ec'],
-    sky: false
-  },
-  {
-    words: "駅のホームで\nみんな同じ方向を見てる。\nなんかちょっと仲間っぽい。",
-    palette: ['#303040','#484858','#686878','#909098','#b8b8c0','#e0e0e4'],
-    sky: false
-  },
-  {
-    words: "日曜の朝。\n目覚ましが鳴らないって\nこんなにうれしいのか。",
-    palette: ['#fdf8f0','#f8e8d0','#f0d8b0','#e0c898','#d0b880','#faf4ec'],
-    sky: true
-  },
-  {
-    words: "焼きたてのパンの匂い。\n理由もなく\nいい日になりそうな気がする。",
-    palette: ['#f5e6d0','#e8d0a8','#d8b880','#c8a060','#a88848','#faf0e0'],
-    sky: false
-  }
+  { words: "帰り道、猫がいた。\nそれだけで今日は勝ち。", palette: ['#1a1a2e','#16213e','#0f3460','#e94560','#f5c469','#fceabb'], sky: true },
+  { words: "布団に入った瞬間の\nあの「はぁー」って声。\nあれが一番正直な自分だと思う。", palette: ['#2d3436','#636e72','#b2bec3','#dfe6e9','#a8d8ea','#f8f9fa'], sky: false },
+  { words: "今日も関係なく\n空は暮れていく。\nなんだか、それが少し安心する。", palette: ['#2c3e50','#2e4057','#048a81','#54c6eb','#8ee3ef','#f7f7f7'], sky: true },
+  { words: "コンビニのおにぎり、うまい。\nそれでいい。", palette: ['#0d1b2a','#1b263b','#415a77','#778da9','#e0e1dd','#c9ada7'], sky: false },
+  { words: "誰にも言わなかったけど、\n今日ちょっとがんばった。\n自分だけ知ってる。", palette: ['#355070','#6d597a','#b56576','#e56b6f','#eaac8b','#f8edeb'], sky: false },
+  { words: "風が吹いた。\nそれだけのことが、妙にうれしい日もある。", palette: ['#606c38','#283618','#fefae0','#dda15e','#bc6c25','#8fbc8f'], sky: false },
+  { words: "夜が静かなのは、\n世界が明日のために\nいま息をしてるからだと思う。", palette: ['#03045e','#023e8a','#0077b6','#0096c7','#48cae4','#caf0f8'], sky: true },
+  { words: "雨の音。\nなにもしなくていい理由を\n空がくれた。", palette: ['#434343','#5a5a5a','#7c8594','#a0b0c0','#c4d4e0','#e8ecf0'], sky: false },
+  { words: "電車の窓に映った自分、\n思ったより\nちゃんとした顔してた。", palette: ['#1b1b2f','#1f3044','#2a5a6a','#5ca08e','#a1d6b2','#f1f1e8'], sky: false },
+  { words: "明日やろう。\nそう思えるってことは、\n明日が来ると信じてるってこと。", palette: ['#2b2d42','#3d3f5c','#8d99ae','#d4a373','#edc4b3','#fefae0'], sky: true },
+  { words: "缶コーヒー、あったかい。\n手のひらから\nじんわり生きてる感じがする。", palette: ['#3d2b1f','#5c4033','#8b6f47','#c4a35a','#dbc9a0','#f5eedc'], sky: false },
+  { words: "信号待ち。\n隣のおばあちゃんが\n鼻歌うたってた。\nちょっと笑った。", palette: ['#264653','#2a6f5f','#2a9d8f','#e9c46a','#f4a261','#fdf4e8'], sky: false },
+  { words: "月がでかい。\nそれだけで今日はいい日だった気がする。", palette: ['#0a0a23','#141432','#1e1e50','#3a3a8c','#7070b8','#e0e0f0'], sky: true },
+  { words: "お風呂のお湯に沈む瞬間。\nあ、今日おわった。って。\nそれが一番ほっとする。", palette: ['#3a3a5c','#4a5a7a','#6a8aaa','#9ab8d8','#c8daea','#eaf2f8'], sky: false },
+  { words: "朝、カーテン開けたら\n知らない鳥が鳴いてた。\nなんか得した。", palette: ['#fdf6e3','#f5e6ca','#e8c170','#d4956b','#a3c4bc','#7eb8c9'], sky: true },
+  { words: "傘、忘れた。\nでも走ったら走ったで\n雨ってちょっと気持ちいい。", palette: ['#4a4a5a','#5a6070','#708090','#90a0b0','#b0c4de','#d0dae8'], sky: false },
+  { words: "好きな曲を\nイヤホンで聴きながら歩く。\nその間だけ\n世界が自分のもの。", palette: ['#1a1a2e','#2d2d44','#4a3f6b','#7b6fa0','#b8a9c9','#e8e0f0'], sky: false },
+  { words: "冷蔵庫にプリンがある。\n昨日の自分、ナイス。", palette: ['#fef9ef','#fceabb','#f8d49a','#e8b87a','#c8a070','#a08060'], sky: false },
+  { words: "星がきれいな夜は\n悩みごとがちょっとバカバカしくなる。\nスケールが違いすぎて。", palette: ['#050520','#0a0a40','#151560','#3030a0','#6060d0','#c0c0f0'], sky: true },
+  { words: "なんにもしなかった日。\nでも息はしてた。\nそれでいいんじゃないの。", palette: ['#e8e4e0','#d0ccc8','#b8b4b0','#a09c98','#888480','#f0ece8'], sky: false },
+  { words: "スーパーの惣菜コーナーで\nめちゃくちゃ悩む。\nこの真剣さ、仕事でも出せたらな。", palette: ['#f5f0e0','#e8d8b0','#d4c090','#c0a870','#a89060','#f8f4ec'], sky: false },
+  { words: "古い友達からLINE来た。\n「元気？」だけ。\nそれだけで元気になるのズルい。", palette: ['#2a4a3a','#3a6a50','#5a9a70','#80c090','#a8d8b0','#e0f0e4'], sky: false },
+  { words: "洗濯物がよく乾いた。\nたったそれだけのことが\nめちゃくちゃ気持ちいい。", palette: ['#e0f0ff','#c0e0f8','#80c0e8','#40a0d8','#2080b8','#f0f8ff'], sky: true },
+  { words: "寝る前に「明日何食べよう」って考える。\nこれ、地味に幸せなんだと思う。", palette: ['#1a1a30','#2a2a48','#3a3a60','#5a5a88','#8888b0','#c0c0d8'], sky: false },
+  { words: "子どもが転んで泣いて\n3秒で笑ってた。\nあの切り替え見習いたい。", palette: ['#fff8e7','#ffe8b0','#ffd080','#ffb860','#ff9840','#fff4e0'], sky: false },
+  { words: "散歩してたら\n知らない花が咲いてた。\n名前は知らないけど\nきれいだった。", palette: ['#2a402a','#3a5a38','#5a8a50','#80b868','#a8d890','#e0f0d8'], sky: false },
+  { words: "疲れた日は\n何も考えずに空を見る。\n空はいつも\nちゃんとそこにある。", palette: ['#1a2a4a','#2a4a6a','#4a7a9a','#7aaaca','#aadaea','#e0f0f8'], sky: true },
+  { words: "ありがとう、って言われた。\nそれだけで\n今日やったことに\n意味ができた。", palette: ['#4a3040','#6a4858','#9a7080','#c898a8','#e0c0c8','#f8e8ec'], sky: false },
+  { words: "駅のホームで\nみんな同じ方向を見てる。\nなんかちょっと仲間っぽい。", palette: ['#303040','#484858','#686878','#909098','#b8b8c0','#e0e0e4'], sky: false },
+  { words: "日曜の朝。\n目覚ましが鳴らないって\nこんなにうれしいのか。", palette: ['#fdf8f0','#f8e8d0','#f0d8b0','#e0c898','#d0b880','#faf4ec'], sky: true },
+  { words: "焼きたてのパンの匂い。\n理由もなく\nいい日になりそうな気がする。", palette: ['#f5e6d0','#e8d0a8','#d8b880','#c8a060','#a88848','#faf0e0'], sky: false }
 ];
 
-// 今日のエントリ
 const today = new Date();
 const dayOfYear = Math.floor((today - new Date(today.getFullYear(),0,0)) / 86400000);
-const entry = entries[dayOfYear % entries.length];
-
-// 背景色を設定
-document.body.style.background = `linear-gradient(160deg, ${entry.palette[0]}11, ${entry.palette[3]}22, ${entry.palette[5]}33)`;
-
-// 日付表示
+const todayIdx = dayOfYear % entries.length;
 const months = ['睦月','如月','弥生','卯月','皐月','水無月','文月','葉月','長月','神無月','霜月','師走'];
-document.getElementById('date').textContent = `${today.getFullYear()}年 ${months[today.getMonth()]} ${today.getDate()}日`;
 
-// 言葉を表示
-const wordsEl = document.getElementById('words');
-entry.words.split('\n').forEach(line => {
+// --- ヒーロー ---
+const hero = entries[todayIdx];
+document.getElementById('heroDate').textContent = `${today.getFullYear()}年 ${months[today.getMonth()]} ${today.getDate()}日`;
+hero.words.split('\n').forEach(line => {
   const p = document.createElement('p');
   p.textContent = line;
-  wordsEl.appendChild(p);
+  document.getElementById('heroWords').appendChild(p);
 });
 
-// --- 絵を描く ---
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = 800;
-canvas.height = 600;
+// ヒーロー絵（アニメーション付き）
+const hc = document.getElementById('heroCanvas');
+const hctx = hc.getContext('2d');
+function resizeHero() { hc.width = window.innerWidth; hc.height = window.innerHeight; }
+resizeHero();
+window.addEventListener('resize', resizeHero);
 
-function draw() {
-  const p = entry.palette;
+let frame = 0;
+function drawHero() {
+  const w = hc.width, h = hc.height, p = hero.palette;
+  const grad = hctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, p[0]); grad.addColorStop(0.3, p[1]); grad.addColorStop(0.5, p[2]);
+  grad.addColorStop(0.7, p[3]); grad.addColorStop(0.85, p[4]); grad.addColorStop(1, p[5]);
+  hctx.fillStyle = grad;
+  hctx.fillRect(0, 0, w, h);
 
-  // グラデーション背景
-  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  grad.addColorStop(0, p[0]);
-  grad.addColorStop(0.35, p[1]);
-  grad.addColorStop(0.55, p[2]);
-  grad.addColorStop(0.7, p[3]);
-  grad.addColorStop(0.85, p[4]);
-  grad.addColorStop(1, p[5]);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const t = frame * 0.005;
 
-  // 日によって変わるシード
-  const seed = dayOfYear * 137.5;
-
-  if (entry.sky) {
-    // 空のシーン — 雲と光
-    for (let i = 0; i < 6; i++) {
-      const x = (Math.sin(seed + i * 47) * 0.5 + 0.5) * canvas.width;
-      const y = 80 + (Math.cos(seed + i * 31) * 0.5 + 0.5) * 200;
-      const r = 40 + (Math.sin(seed + i * 23) * 0.5 + 0.5) * 80;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.03 + Math.sin(seed + i) * 0.02})`;
-      ctx.fill();
-      // ぼかし効果
-      for (let j = 1; j < 4; j++) {
-        ctx.beginPath();
-        ctx.arc(x + j * 15, y - j * 5, r * (1 + j * 0.3), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.015})`;
-        ctx.fill();
-      }
-    }
-    // 光の筋
-    for (let i = 0; i < 3; i++) {
-      const x = canvas.width * (0.3 + Math.sin(seed + i * 73) * 0.3);
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x - 60, canvas.height);
-      ctx.lineTo(x + 60, canvas.height);
-      ctx.closePath();
-      ctx.fillStyle = `rgba(255, 240, 200, ${0.015})`;
-      ctx.fill();
-    }
-  } else {
-    // 静かなシーン — 丸い光の粒
-    for (let i = 0; i < 30; i++) {
-      const x = (Math.sin(seed + i * 97) * 0.5 + 0.5) * canvas.width;
-      const y = (Math.cos(seed + i * 61) * 0.5 + 0.5) * canvas.height;
-      const r = 2 + (Math.sin(seed + i * 41) * 0.5 + 0.5) * 6;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.05 + Math.sin(seed + i * 13) * 0.03})`;
-      ctx.fill();
-    }
+  // 光の粒がゆっくり漂う
+  for (let i = 0; i < 50; i++) {
+    const seed = i * 137.5 + dayOfYear;
+    const x = (Math.sin(seed + t * (0.3 + i * 0.01)) * 0.5 + 0.5) * w;
+    const y = (Math.cos(seed * 0.7 + t * (0.2 + i * 0.008)) * 0.5 + 0.5) * h;
+    const r = 1.5 + Math.sin(seed) * 2;
+    const alpha = 0.03 + Math.sin(t + seed) * 0.02;
+    hctx.beginPath();
+    hctx.arc(x, y, r, 0, Math.PI * 2);
+    hctx.fillStyle = `rgba(255,255,255,${Math.max(0, alpha)})`;
+    hctx.fill();
   }
 
-  // 雨のシーン（パレットがグレー系のとき）
-  if (p[0].match(/#[3-5][0-9a-f]/i) && !entry.sky) {
-    for (let i = 0; i < 40; i++) {
-      const x = (Math.sin(seed + i * 113) * 0.5 + 0.5) * canvas.width;
-      const y = (Math.cos(seed + i * 79) * 0.5 + 0.5) * canvas.height;
-      const len = 8 + Math.random() * 16;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 2, y + len);
-      ctx.strokeStyle = `rgba(200, 210, 220, ${0.06 + Math.random() * 0.04})`;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
+  // 稜線
+  hctx.beginPath();
+  hctx.moveTo(0, h * 0.78);
+  for (let x = 0; x <= w; x += 3) {
+    const y = h * 0.78 + Math.sin(x * 0.005 + t * 0.3) * 20 + Math.sin(x * 0.015 + t * 0.1) * 8;
+    hctx.lineTo(x, y);
   }
+  hctx.lineTo(w, h); hctx.lineTo(0, h); hctx.closePath();
+  hctx.fillStyle = p[0] + '90';
+  hctx.fill();
 
-  // 下部に地平線のようなライン
-  ctx.beginPath();
-  ctx.moveTo(0, canvas.height * 0.75);
-  for (let x = 0; x <= canvas.width; x += 2) {
-    const y = canvas.height * 0.75 + Math.sin(x * 0.008 + seed * 0.1) * 15 + Math.sin(x * 0.02 + seed) * 5;
-    ctx.lineTo(x, y);
-  }
-  ctx.lineTo(canvas.width, canvas.height);
-  ctx.lineTo(0, canvas.height);
-  ctx.closePath();
-  ctx.fillStyle = p[0] + '80';
-  ctx.fill();
+  frame++;
+  requestAnimationFrame(drawHero);
+}
+drawHero();
+
+// --- カード群 ---
+const cardsEl = document.getElementById('cards');
+// 今日以外をシャッフルして表示
+const otherIdxs = [];
+for (let i = 0; i < entries.length; i++) { if (i !== todayIdx) otherIdxs.push(i); }
+// シャッフル（日付ベースで安定）
+for (let i = otherIdxs.length - 1; i > 0; i--) {
+  const j = Math.abs(Math.sin(dayOfYear * 31 + i * 17)) * (i + 1) | 0;
+  [otherIdxs[i], otherIdxs[j]] = [otherIdxs[j], otherIdxs[i]];
 }
 
-draw();
+otherIdxs.forEach((idx, i) => {
+  const e = entries[idx];
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.style.background = `linear-gradient(135deg, ${e.palette[4]}20, ${e.palette[5]}30)`;
+
+  const cvs = document.createElement('canvas');
+  cvs.width = 640; cvs.height = 360;
+  card.appendChild(cvs);
+
+  const wordsDiv = document.createElement('div');
+  wordsDiv.className = 'card-words';
+  e.words.split('\n').forEach(line => {
+    const p = document.createElement('p');
+    p.textContent = line;
+    wordsDiv.appendChild(p);
+  });
+  card.appendChild(wordsDiv);
+  cardsEl.appendChild(card);
+
+  // カードの絵を描く
+  const ctx = cvs.getContext('2d');
+  const cw = cvs.width, ch = cvs.height, p = e.palette;
+  const g = ctx.createLinearGradient(0, 0, 0, ch);
+  g.addColorStop(0, p[0]); g.addColorStop(0.4, p[2]); g.addColorStop(0.7, p[3]); g.addColorStop(1, p[5]);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, cw, ch);
+  const seed = idx * 137.5;
+  for (let j = 0; j < 20; j++) {
+    const x = (Math.sin(seed + j * 97) * 0.5 + 0.5) * cw;
+    const y = (Math.cos(seed + j * 61) * 0.5 + 0.5) * ch;
+    ctx.beginPath();
+    ctx.arc(x, y, 1.5 + Math.sin(seed + j) * 2, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${0.04 + Math.sin(seed + j * 13) * 0.02})`;
+    ctx.fill();
+  }
+  ctx.beginPath();
+  ctx.moveTo(0, ch * 0.75);
+  for (let x = 0; x <= cw; x += 3) {
+    ctx.lineTo(x, ch * 0.75 + Math.sin(x * 0.01 + seed * 0.1) * 12);
+  }
+  ctx.lineTo(cw, ch); ctx.lineTo(0, ch); ctx.closePath();
+  ctx.fillStyle = p[0] + '70';
+  ctx.fill();
+});
+
+// スクロールでカード表示
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.card').forEach(c => observer.observe(c));
+
+// --- 環境音（ホワイトノイズ→ローパスで風/雨音風） ---
+let audioCtx, noiseNode, gainNode, playing = false;
+document.getElementById('soundBtn').addEventListener('click', () => {
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+    const bufSize = audioCtx.sampleRate * 4;
+    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+    noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = buf;
+    noiseNode.loop = true;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+    filter.Q.value = 0.7;
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0;
+    noiseNode.connect(filter).connect(gainNode).connect(audioCtx.destination);
+    noiseNode.start();
+  }
+  playing = !playing;
+  gainNode.gain.linearRampToValueAtTime(playing ? 0.15 : 0, audioCtx.currentTime + 1);
+  document.getElementById('soundBtn').textContent = playing ? '🔊' : '🔇';
+});
 </script>
 </body>
 </html>
