@@ -94,6 +94,85 @@ body {
 }
 .card-words p { margin-bottom: 0.5em; }
 
+/* ハートボタン */
+.heart-btn {
+  margin-top: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.3;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.heart-btn:hover { opacity: 0.6; }
+.heart-btn.liked { opacity: 1; transform: scale(1.2); }
+
+/* コレクションバー */
+.collection-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  text-align: center;
+  padding: 0.6rem;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  font-size: 0.85rem;
+  color: #888;
+  transform: translateY(-100%);
+  transition: transform 0.5s ease;
+  cursor: pointer;
+}
+.collection-bar.show { transform: translateY(0); }
+.collection-count { color: #e07070; font-weight: bold; }
+
+/* コレクションページ */
+.collection-page {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(250,248,245,0.97);
+  backdrop-filter: blur(12px);
+  overflow-y: auto;
+  padding: 3rem 1.5rem;
+}
+.collection-page.open { display: block; }
+.collection-page h2 {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #888;
+  margin-bottom: 2rem;
+  font-weight: normal;
+}
+.collection-item {
+  text-align: center;
+  padding: 2rem 0;
+  border-bottom: 1px solid #f0ece8;
+  font-size: 1.05rem;
+  line-height: 2;
+  color: #5a5a5a;
+}
+.collection-item p { margin-bottom: 0.4em; }
+.collection-close {
+  position: fixed;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 21;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #aaa;
+}
+.collection-msg {
+  text-align: center;
+  color: #ccc;
+  font-size: 0.95rem;
+  margin-top: 3rem;
+}
+
 /* 音ボタン */
 .sound-btn {
   position: fixed;
@@ -134,7 +213,17 @@ body {
   <div class="scroll-hint">↓ もっと読む</div>
 </div>
 
+<div class="collection-bar" id="collectionBar">
+  あなたが集めた言葉: <span class="collection-count" id="collectionCount">0</span>
+</div>
+
 <div class="cards" id="cards"></div>
+
+<div class="collection-page" id="collectionPage">
+  <button class="collection-close" id="collectionClose">×</button>
+  <h2>あなたが集めた言葉</h2>
+  <div id="collectionList"></div>
+</div>
 
 <button class="sound-btn" id="soundBtn" title="環境音">🔇</button>
 
@@ -263,6 +352,7 @@ otherIdxs.forEach((idx, i) => {
     wordsDiv.appendChild(p);
   });
   card.appendChild(wordsDiv);
+  addHeart(card, idx);
   cardsEl.appendChild(card);
 
   // カードの絵を描く
@@ -290,6 +380,73 @@ otherIdxs.forEach((idx, i) => {
   ctx.fillStyle = p[0] + '70';
   ctx.fill();
 });
+
+// --- コレクション機能 ---
+let liked = JSON.parse(localStorage.getItem('komorebi-liked') || '[]');
+
+function updateCollection() {
+  localStorage.setItem('komorebi-liked', JSON.stringify(liked));
+  const count = liked.length;
+  document.getElementById('collectionCount').textContent = count;
+  if (count > 0) document.getElementById('collectionBar').classList.add('show');
+
+  // コレクションページ更新
+  const list = document.getElementById('collectionList');
+  list.innerHTML = '';
+  if (count === 0) {
+    list.innerHTML = '<div class="collection-msg">ハートを押して、好きな言葉を集めよう</div>';
+  } else {
+    liked.forEach(idx => {
+      const e = entries[idx];
+      const item = document.createElement('div');
+      item.className = 'collection-item';
+      e.words.split('\n').forEach(line => {
+        const p = document.createElement('p');
+        p.textContent = line;
+        item.appendChild(p);
+      });
+      list.appendChild(item);
+    });
+  }
+
+  // コレクション数で背景が少し変わる（さりげなく）
+  if (count >= 10) document.body.style.background = '#f5f3f0';
+  if (count >= 20) document.body.style.background = '#f0eee8';
+}
+
+function addHeart(container, idx) {
+  const btn = document.createElement('button');
+  btn.className = 'heart-btn' + (liked.includes(idx) ? ' liked' : '');
+  btn.textContent = liked.includes(idx) ? '♥' : '♡';
+  btn.addEventListener('click', () => {
+    if (liked.includes(idx)) {
+      liked = liked.filter(i => i !== idx);
+      btn.classList.remove('liked');
+      btn.textContent = '♡';
+    } else {
+      liked.push(idx);
+      btn.classList.add('liked');
+      btn.textContent = '♥';
+    }
+    updateCollection();
+  });
+  container.appendChild(btn);
+}
+
+// コレクションバーのクリック
+document.getElementById('collectionBar').addEventListener('click', () => {
+  document.getElementById('collectionPage').classList.add('open');
+});
+document.getElementById('collectionClose').addEventListener('click', () => {
+  document.getElementById('collectionPage').classList.remove('open');
+});
+
+// ヒーローにもハートを追加
+const heroHeart = document.querySelector('.hero-content');
+addHeart(heroHeart, todayIdx);
+heroHeart.querySelector('.heart-btn').style.color = 'rgba(255,255,255,0.7)';
+
+updateCollection();
 
 // スクロールでカード表示
 const observer = new IntersectionObserver(entries => {
