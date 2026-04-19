@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>こもれび</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  overflow: hidden;
+}
+
+.scene {
+  text-align: center;
+  max-width: 560px;
+  padding: 2rem;
+  opacity: 0;
+  animation: fadeIn 3s ease forwards;
+}
+
+.visual {
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.words {
+  font-size: 1.15rem;
+  line-height: 2;
+  letter-spacing: 0.08em;
+  color: #4a4a4a;
+}
+
+.words p {
+  margin-bottom: 0.8em;
+}
+
+.date {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  color: #b0b0b0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="scene">
+  <canvas class="visual" id="canvas"></canvas>
+  <div class="words" id="words"></div>
+  <div class="date" id="date"></div>
+</div>
+
+<script>
+// --- 日替わりの言葉 ---
+const entries = [
+  {
+    words: "今日も関係なく\n空は暮れていく。\nそれがなんだか、少し安心する。",
+    palette: ['#1a1a2e','#16213e','#0f3460','#e94560','#f5c469','#fceabb'],
+    sky: true
+  },
+  {
+    words: "急がなくていい。\n遅いことは、悪いことじゃない。",
+    palette: ['#2d3436','#636e72','#b2bec3','#dfe6e9','#a8d8ea','#f8f9fa'],
+    sky: false
+  },
+  {
+    words: "誰にも見せなくていい。\n自分だけの「よくやった」があればいい。",
+    palette: ['#2c3e50','#2e4057','#048a81','#54c6eb','#8ee3ef','#f7f7f7'],
+    sky: false
+  },
+  {
+    words: "夜が静かなのは、\n明日のために世界が息をしているから。",
+    palette: ['#0d1b2a','#1b263b','#415a77','#778da9','#e0e1dd','#c9ada7'],
+    sky: true
+  },
+  {
+    words: "完璧じゃなくていい。\nちゃんと生きてる。それだけで十分。",
+    palette: ['#355070','#6d597a','#b56576','#e56b6f','#eaac8b','#f8edeb'],
+    sky: false
+  },
+  {
+    words: "風が吹いた。\nそれだけのことが、妙にうれしい日もある。",
+    palette: ['#606c38','#283618','#fefae0','#dda15e','#bc6c25','#8fbc8f'],
+    sky: false
+  },
+  {
+    words: "泣いてもいい。\n涙は、心が動いている証拠だから。",
+    palette: ['#03045e','#023e8a','#0077b6','#0096c7','#48cae4','#caf0f8'],
+    sky: true
+  }
+];
+
+// 今日のエントリ
+const today = new Date();
+const dayOfYear = Math.floor((today - new Date(today.getFullYear(),0,0)) / 86400000);
+const entry = entries[dayOfYear % entries.length];
+
+// 背景色を設定
+document.body.style.background = `linear-gradient(160deg, ${entry.palette[0]}11, ${entry.palette[3]}22, ${entry.palette[5]}33)`;
+
+// 日付表示
+const months = ['睦月','如月','弥生','卯月','皐月','水無月','文月','葉月','長月','神無月','霜月','師走'];
+document.getElementById('date').textContent = `${today.getFullYear()}年 ${months[today.getMonth()]} ${today.getDate()}日`;
+
+// 言葉を表示
+const wordsEl = document.getElementById('words');
+entry.words.split('\n').forEach(line => {
+  const p = document.createElement('p');
+  p.textContent = line;
+  wordsEl.appendChild(p);
+});
+
+// --- 絵を描く ---
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 800;
+canvas.height = 600;
+
+function draw() {
+  const p = entry.palette;
+
+  // グラデーション背景
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, p[0]);
+  grad.addColorStop(0.35, p[1]);
+  grad.addColorStop(0.55, p[2]);
+  grad.addColorStop(0.7, p[3]);
+  grad.addColorStop(0.85, p[4]);
+  grad.addColorStop(1, p[5]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 日によって変わるシード
+  const seed = dayOfYear * 137.5;
+
+  if (entry.sky) {
+    // 空のシーン — 雲と光
+    for (let i = 0; i < 6; i++) {
+      const x = (Math.sin(seed + i * 47) * 0.5 + 0.5) * canvas.width;
+      const y = 80 + (Math.cos(seed + i * 31) * 0.5 + 0.5) * 200;
+      const r = 40 + (Math.sin(seed + i * 23) * 0.5 + 0.5) * 80;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.03 + Math.sin(seed + i) * 0.02})`;
+      ctx.fill();
+      // ぼかし効果
+      for (let j = 1; j < 4; j++) {
+        ctx.beginPath();
+        ctx.arc(x + j * 15, y - j * 5, r * (1 + j * 0.3), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.015})`;
+        ctx.fill();
+      }
+    }
+    // 光の筋
+    for (let i = 0; i < 3; i++) {
+      const x = canvas.width * (0.3 + Math.sin(seed + i * 73) * 0.3);
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x - 60, canvas.height);
+      ctx.lineTo(x + 60, canvas.height);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(255, 240, 200, ${0.015})`;
+      ctx.fill();
+    }
+  } else {
+    // 静かなシーン — 丸い光の粒
+    for (let i = 0; i < 30; i++) {
+      const x = (Math.sin(seed + i * 97) * 0.5 + 0.5) * canvas.width;
+      const y = (Math.cos(seed + i * 61) * 0.5 + 0.5) * canvas.height;
+      const r = 2 + (Math.sin(seed + i * 41) * 0.5 + 0.5) * 6;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.05 + Math.sin(seed + i * 13) * 0.03})`;
+      ctx.fill();
+    }
+  }
+
+  // 下部に地平線のようなライン
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height * 0.75);
+  for (let x = 0; x <= canvas.width; x += 2) {
+    const y = canvas.height * 0.75 + Math.sin(x * 0.008 + seed * 0.1) * 15 + Math.sin(x * 0.02 + seed) * 5;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(canvas.width, canvas.height);
+  ctx.lineTo(0, canvas.height);
+  ctx.closePath();
+  ctx.fillStyle = p[0] + '80';
+  ctx.fill();
+}
+
+draw();
+</script>
+</body>
+</html>
