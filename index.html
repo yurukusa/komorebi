@@ -133,6 +133,91 @@ const entries = [
     words: "お風呂のお湯に沈む瞬間。\nあ、今日おわった。って。\nそれが一番ほっとする。",
     palette: ['#3a3a5c','#4a5a7a','#6a8aaa','#9ab8d8','#c8daea','#eaf2f8'],
     sky: false
+  },
+  {
+    words: "朝、カーテン開けたら\n知らない鳥が鳴いてた。\nなんか得した。",
+    palette: ['#fdf6e3','#f5e6ca','#e8c170','#d4956b','#a3c4bc','#7eb8c9'],
+    sky: true
+  },
+  {
+    words: "傘、忘れた。\nでも走ったら走ったで\n雨ってちょっと気持ちいい。",
+    palette: ['#4a4a5a','#5a6070','#708090','#90a0b0','#b0c4de','#d0dae8'],
+    sky: false
+  },
+  {
+    words: "好きな曲を\nイヤホンで聴きながら歩く。\nその間だけ\n世界が自分のもの。",
+    palette: ['#1a1a2e','#2d2d44','#4a3f6b','#7b6fa0','#b8a9c9','#e8e0f0'],
+    sky: false
+  },
+  {
+    words: "冷蔵庫にプリンがある。\n昨日の自分、ナイス。",
+    palette: ['#fef9ef','#fceabb','#f8d49a','#e8b87a','#c8a070','#a08060'],
+    sky: false
+  },
+  {
+    words: "星がきれいな夜は\n悩みごとがちょっとバカバカしくなる。\nスケールが違いすぎて。",
+    palette: ['#050520','#0a0a40','#151560','#3030a0','#6060d0','#c0c0f0'],
+    sky: true
+  },
+  {
+    words: "なんにもしなかった日。\nでも息はしてた。\nそれでいいんじゃないの。",
+    palette: ['#e8e4e0','#d0ccc8','#b8b4b0','#a09c98','#888480','#f0ece8'],
+    sky: false
+  },
+  {
+    words: "スーパーの惣菜コーナーで\nめちゃくちゃ悩む。\nこの真剣さ、仕事でも出せたらな。",
+    palette: ['#f5f0e0','#e8d8b0','#d4c090','#c0a870','#a89060','#f8f4ec'],
+    sky: false
+  },
+  {
+    words: "古い友達からLINE来た。\n「元気？」だけ。\nそれだけで元気になるのズルい。",
+    palette: ['#2a4a3a','#3a6a50','#5a9a70','#80c090','#a8d8b0','#e0f0e4'],
+    sky: false
+  },
+  {
+    words: "洗濯物がよく乾いた。\nたったそれだけのことが\nめちゃくちゃ気持ちいい。",
+    palette: ['#e0f0ff','#c0e0f8','#80c0e8','#40a0d8','#2080b8','#f0f8ff'],
+    sky: true
+  },
+  {
+    words: "寝る前に「明日何食べよう」って考える。\nこれ、地味に幸せなんだと思う。",
+    palette: ['#1a1a30','#2a2a48','#3a3a60','#5a5a88','#8888b0','#c0c0d8'],
+    sky: false
+  },
+  {
+    words: "子どもが転んで泣いて\n3秒で笑ってた。\nあの切り替え見習いたい。",
+    palette: ['#fff8e7','#ffe8b0','#ffd080','#ffb860','#ff9840','#fff4e0'],
+    sky: false
+  },
+  {
+    words: "散歩してたら\n知らない花が咲いてた。\n名前は知らないけど\nきれいだった。",
+    palette: ['#2a402a','#3a5a38','#5a8a50','#80b868','#a8d890','#e0f0d8'],
+    sky: false
+  },
+  {
+    words: "疲れた日は\n何も考えずに空を見る。\n空はいつも\nちゃんとそこにある。",
+    palette: ['#1a2a4a','#2a4a6a','#4a7a9a','#7aaaca','#aadaea','#e0f0f8'],
+    sky: true
+  },
+  {
+    words: "ありがとう、って言われた。\nそれだけで\n今日やったことに\n意味ができた。",
+    palette: ['#4a3040','#6a4858','#9a7080','#c898a8','#e0c0c8','#f8e8ec'],
+    sky: false
+  },
+  {
+    words: "駅のホームで\nみんな同じ方向を見てる。\nなんかちょっと仲間っぽい。",
+    palette: ['#303040','#484858','#686878','#909098','#b8b8c0','#e0e0e4'],
+    sky: false
+  },
+  {
+    words: "日曜の朝。\n目覚ましが鳴らないって\nこんなにうれしいのか。",
+    palette: ['#fdf8f0','#f8e8d0','#f0d8b0','#e0c898','#d0b880','#faf4ec'],
+    sky: true
+  },
+  {
+    words: "焼きたてのパンの匂い。\n理由もなく\nいい日になりそうな気がする。",
+    palette: ['#f5e6d0','#e8d0a8','#d8b880','#c8a060','#a88848','#faf0e0'],
+    sky: false
   }
 ];
 
@@ -218,6 +303,21 @@ function draw() {
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255, 255, 255, ${0.05 + Math.sin(seed + i * 13) * 0.03})`;
       ctx.fill();
+    }
+  }
+
+  // 雨のシーン（パレットがグレー系のとき）
+  if (p[0].match(/#[3-5][0-9a-f]/i) && !entry.sky) {
+    for (let i = 0; i < 40; i++) {
+      const x = (Math.sin(seed + i * 113) * 0.5 + 0.5) * canvas.width;
+      const y = (Math.cos(seed + i * 79) * 0.5 + 0.5) * canvas.height;
+      const len = 8 + Math.random() * 16;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 2, y + len);
+      ctx.strokeStyle = `rgba(200, 210, 220, ${0.06 + Math.random() * 0.04})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
   }
 
