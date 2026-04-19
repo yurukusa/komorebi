@@ -230,6 +230,23 @@ body {
   <div id="collectionList"></div>
 </div>
 
+<button class="sound-btn" id="writeBtn" style="bottom:4.5rem;right:1.5rem;" title="自分の言葉を書く" onclick="openWrite()">✏️</button>
+
+<div id="writeModal" style="display:none;position:fixed;inset:0;z-index:30;background:rgba(250,248,245,0.97);backdrop-filter:blur(12px);padding:3rem 1.5rem;overflow-y:auto;">
+  <button onclick="closeWrite()" style="position:fixed;top:1rem;right:1.5rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#aaa;">×</button>
+  <div style="max-width:480px;margin:0 auto;text-align:center;">
+    <h2 style="font-size:1.1rem;color:#888;font-weight:normal;margin-bottom:1rem;">今日の小さな幸せ</h2>
+    <p style="font-size:0.85rem;color:#bbb;margin-bottom:2rem;">なんでもいい。思いついたことを書いてみて。</p>
+    <textarea id="writeArea" placeholder="帰り道、いい匂いがした。" style="width:100%;height:120px;border:1px solid #e0dcd8;border-radius:12px;padding:1rem;font-family:inherit;font-size:1rem;line-height:1.8;resize:none;background:#fff;color:#4a4a4a;"></textarea>
+    <button onclick="saveMyWords()" style="margin-top:1rem;padding:0.7rem 2rem;border:none;border-radius:8px;background:#e0dcd8;color:#5a5a5a;font-family:inherit;font-size:0.95rem;cursor:pointer;">残しておく</button>
+    <div id="myWordsList" style="margin-top:2rem;text-align:center;"></div>
+    <div style="margin-top:3rem;border-top:1px solid #e8e4e0;padding-top:2rem;">
+      <h3 style="font-size:0.9rem;color:#aaa;font-weight:normal;margin-bottom:1rem;">みんなが書いた言葉</h3>
+      <div id="sharedWordsList" style="text-align:center;"></div>
+    </div>
+  </div>
+</div>
+
 <a href="sounds.html" style="position:fixed;bottom:1.5rem;left:1.5rem;z-index:10;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:1.2rem;box-shadow:0 2px 12px rgba(0,0,0,0.1);text-decoration:none;" title="環境音ミキサー">🎧</a>
 <button class="sound-btn" id="soundBtn" title="環境音">🔇</button>
 
@@ -467,6 +484,102 @@ const observer = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.15 });
 document.querySelectorAll('.card').forEach(c => observer.observe(c));
+
+// --- Supabase設定 ---
+const SUPABASE_URL = 'https://gmngmvhruhshdsjjgvsu.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtbmdtdmhydWhzaGRzampndnN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NjgyMDAsImV4cCI6MjA5MjE0NDIwMH0.TgVE-rLzEPucHI8_mPtSj6rUbsuj1EhpChkIGlrqsig';
+
+async function fetchSharedWords() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/words?select=*&order=created_at.desc&limit=50`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    return await res.json();
+  } catch(e) { return []; }
+}
+
+async function postSharedWord(text) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/words`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text })
+    });
+  } catch(e) {}
+}
+
+// --- 自分の言葉 ---
+function openWrite() { document.getElementById('writeModal').style.display = 'block'; renderMyWords(); }
+function closeWrite() { document.getElementById('writeModal').style.display = 'none'; }
+async function saveMyWords() {
+  const text = document.getElementById('writeArea').value.trim();
+  if (!text) return;
+  const myWords = JSON.parse(localStorage.getItem('komorebi-mywords') || '[]');
+  myWords.unshift({ text, date: new Date().toLocaleDateString('ja-JP') });
+  localStorage.setItem('komorebi-mywords', JSON.stringify(myWords));
+  document.getElementById('writeArea').value = '';
+  await postSharedWord(text);
+  renderMyWords();
+  loadSharedWords();
+}
+function renderMyWords() {
+  const myWords = JSON.parse(localStorage.getItem('komorebi-mywords') || '[]');
+  const list = document.getElementById('myWordsList');
+  if (myWords.length === 0) {
+    list.innerHTML = '<p style="color:#ccc;font-size:0.9rem;margin-top:2rem;">まだ何も書いてない</p>';
+    return;
+  }
+  list.innerHTML = '<h3 style="font-size:0.9rem;color:#aaa;font-weight:normal;margin-bottom:1rem;">あなたが書いた言葉</h3>';
+  myWords.forEach(w => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:1.5rem 0;border-bottom:1px solid #f0ece8;';
+    w.text.split('\n').forEach(line => {
+      const p = document.createElement('p');
+      p.textContent = line;
+      p.style.cssText = 'font-size:1.05rem;line-height:2;color:#5a5a5a;margin-bottom:0.3em;';
+      div.appendChild(p);
+    });
+    const date = document.createElement('p');
+    date.textContent = w.date;
+    date.style.cssText = 'font-size:0.75rem;color:#ccc;margin-top:0.5rem;';
+    div.appendChild(date);
+    list.appendChild(div);
+  });
+}
+
+// --- 共有された言葉を表示 ---
+async function loadSharedWords() {
+  const words = await fetchSharedWords();
+  const list = document.getElementById('sharedWordsList');
+  if (!list) return;
+  if (words.length === 0) {
+    list.innerHTML = '<p style="color:#ccc;font-size:0.9rem;">まだ誰も書いてない</p>';
+    return;
+  }
+  list.innerHTML = '';
+  words.forEach(w => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:1.5rem 0;border-bottom:1px solid #f0ece8;';
+    w.text.split('\n').forEach(line => {
+      const p = document.createElement('p');
+      p.textContent = line;
+      p.style.cssText = 'font-size:1rem;line-height:1.8;color:#6a6a6a;margin-bottom:0.3em;';
+      div.appendChild(p);
+    });
+    const date = document.createElement('p');
+    date.textContent = new Date(w.created_at).toLocaleDateString('ja-JP');
+    date.style.cssText = 'font-size:0.7rem;color:#ccc;margin-top:0.3rem;';
+    div.appendChild(date);
+    list.appendChild(div);
+  });
+}
+
+// 初回読み込み
+loadSharedWords();
 
 // --- 環境音（ホワイトノイズ→ローパスで風/雨音風） ---
 let audioCtx, noiseNode, gainNode, playing = false;
