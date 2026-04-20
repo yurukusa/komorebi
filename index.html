@@ -321,6 +321,32 @@ const entries = [
   { words: "今日の空、\nグラデーションがすごい。\n誰が描いてるんだろう。", palette: ['#1a2040','#2a3868','#4a5890','#7080b8','#a0b0d8','#d0e0f0'], sky: true }
 ];
 
+// --- 時刻による演出変化 ---
+const hour = new Date().getHours();
+let timeOfDay, timeTint, particleColor, bodyBg;
+if (hour >= 5 && hour < 10) {
+  timeOfDay = 'morning';
+  timeTint = 'rgba(255, 220, 180, 0.12)';  // 柔らかい朝日
+  particleColor = [255, 240, 200];
+  bodyBg = '#faf7f2';
+} else if (hour >= 10 && hour < 16) {
+  timeOfDay = 'day';
+  timeTint = 'rgba(255, 255, 240, 0.08)';  // 明るい陽射し
+  particleColor = [255, 255, 255];
+  bodyBg = '#f8f6f3';
+} else if (hour >= 16 && hour < 19) {
+  timeOfDay = 'evening';
+  timeTint = 'rgba(255, 140, 60, 0.15)';   // 夕焼け
+  particleColor = [255, 200, 150];
+  bodyBg = '#f5f0ea';
+} else {
+  timeOfDay = 'night';
+  timeTint = 'rgba(40, 40, 100, 0.2)';     // 夜の静けさ
+  particleColor = [180, 200, 255];
+  bodyBg = '#eeeef4';
+}
+document.body.style.background = bodyBg;
+
 // --- レア言葉（時間帯限定） ---
 const rareEntries = [
   { words: "深夜3時。\n世界で起きてるの、\n自分だけかもしれない。\nそれが、ちょっとだけ特別。", palette: ['#05051a','#0a0a30','#151550','#252580','#4040b0','#8080d0'], sky: true, time: 'night', rarity: '🌙' },
@@ -354,32 +380,6 @@ const hctx = hc.getContext('2d');
 function resizeHero() { hc.width = window.innerWidth; hc.height = window.innerHeight; }
 resizeHero();
 window.addEventListener('resize', resizeHero);
-
-// --- 時刻による演出変化 ---
-const hour = new Date().getHours();
-let timeOfDay, timeTint, particleColor, bodyBg;
-if (hour >= 5 && hour < 10) {
-  timeOfDay = 'morning';
-  timeTint = 'rgba(255, 220, 180, 0.12)';  // 柔らかい朝日
-  particleColor = [255, 240, 200];
-  bodyBg = '#faf7f2';
-} else if (hour >= 10 && hour < 16) {
-  timeOfDay = 'day';
-  timeTint = 'rgba(255, 255, 240, 0.08)';  // 明るい陽射し
-  particleColor = [255, 255, 255];
-  bodyBg = '#f8f6f3';
-} else if (hour >= 16 && hour < 19) {
-  timeOfDay = 'evening';
-  timeTint = 'rgba(255, 140, 60, 0.15)';   // 夕焼け
-  particleColor = [255, 200, 150];
-  bodyBg = '#f5f0ea';
-} else {
-  timeOfDay = 'night';
-  timeTint = 'rgba(40, 40, 100, 0.2)';     // 夜の静けさ
-  particleColor = [180, 200, 255];
-  bodyBg = '#eeeef4';
-}
-document.body.style.background = bodyBg;
 
 let frame = 0;
 function drawHero() {
