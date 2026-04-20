@@ -100,6 +100,11 @@ body {
 .card.touched {
   box-shadow: 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.05);
 }
+.card.longpress {
+  box-shadow: 0 0 60px rgba(255, 220, 180, 0.5), inset 0 0 40px rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px) scale(1.01);
+  transition: box-shadow 1.5s ease, transform 0.5s ease;
+}
 .card canvas {
   width: 100%;
   aspect-ratio: 16/9;
@@ -146,6 +151,15 @@ body {
 }
 .collection-bar.show { transform: translateY(0); }
 .collection-count { color: #e07070; font-weight: bold; }
+.streak-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  background: rgba(255, 180, 100, 0.15);
+  border-radius: 1rem;
+  color: #c08040;
+  margin-left: 0.5rem;
+}
 
 /* コレクションページ */
 .collection-page {
@@ -234,7 +248,7 @@ body {
 </div>
 
 <div class="collection-bar" id="collectionBar">
-  あなたが集めた言葉: <span class="collection-count" id="collectionCount">0</span>
+  あなたが集めた言葉: <span class="collection-count" id="collectionCount">0</span><span class="streak-badge" id="streakBadge" style="display:none"></span>
   <span id="collectionPraise" style="display:block;font-size:0.7rem;opacity:0;transition:opacity 1s ease;margin-top:0.2rem;color:rgba(255,255,255,0.6)"></span>
 </div>
 
@@ -727,6 +741,58 @@ document.getElementById('soundBtn').addEventListener('click', () => {
   gainNode.gain.linearRampToValueAtTime(playing ? 0.15 : 0, audioCtx.currentTime + 1);
   document.getElementById('soundBtn').textContent = playing ? '🔊' : '🔇';
 });
+
+// --- 訪問ストリーク ---
+(function() {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const data = JSON.parse(localStorage.getItem('komorebi-streak') || '{}');
+  let streak = 1;
+
+  if (data.lastVisit) {
+    const last = new Date(data.lastVisit);
+    const diff = Math.floor((new Date(todayStr) - last) / 86400000);
+    if (diff === 0) {
+      streak = data.streak || 1;
+    } else if (diff === 1) {
+      streak = (data.streak || 0) + 1;
+    }
+    // diff > 1 ならリセット（streak = 1）
+  }
+
+  localStorage.setItem('komorebi-streak', JSON.stringify({ lastVisit: todayStr, streak }));
+
+  if (streak >= 2) {
+    const badge = document.getElementById('streakBadge');
+    badge.style.display = 'inline-block';
+    const milestones = { 30: '🌳 ', 14: '🌿 ', 7: '🍀 ', 3: '🌱 ', 2: '' };
+    let icon = '';
+    for (const [days, emoji] of Object.entries(milestones).sort((a,b) => b[0]-a[0])) {
+      if (streak >= Number(days)) { icon = emoji; break; }
+    }
+    badge.textContent = icon + streak + '日連続';
+    document.getElementById('collectionBar').classList.add('show');
+  }
+})();
+
+// --- 長押し特別演出 ---
+(function() {
+  let pressTimer;
+  document.querySelectorAll('.card').forEach(card => {
+    const start = () => {
+      pressTimer = setTimeout(() => {
+        card.classList.add('longpress');
+        setTimeout(() => card.classList.remove('longpress'), 3000);
+      }, 800);
+    };
+    const cancel = () => clearTimeout(pressTimer);
+    card.addEventListener('mousedown', start);
+    card.addEventListener('touchstart', start, { passive: true });
+    card.addEventListener('mouseup', cancel);
+    card.addEventListener('mouseleave', cancel);
+    card.addEventListener('touchend', cancel);
+    card.addEventListener('touchcancel', cancel);
+  });
+})();
 </script>
 </body>
 </html>
