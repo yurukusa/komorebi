@@ -323,7 +323,8 @@ const months = ['睦月','如月','弥生','卯月','皐月','水無月','文月
 
 // --- ヒーロー ---
 const hero = entries[todayIdx];
-document.getElementById('heroDate').textContent = `${today.getFullYear()}年 ${months[today.getMonth()]} ${today.getDate()}日`;
+const greetings = { morning: 'おはよう', day: 'こんにちは', evening: 'おつかれさま', night: 'おやすみ' };
+document.getElementById('heroDate').textContent = `${greetings[timeOfDay]}　${today.getFullYear()}年 ${months[today.getMonth()]} ${today.getDate()}日`;
 hero.words.split('\n').forEach(line => {
   const p = document.createElement('p');
   p.textContent = line;
@@ -337,6 +338,32 @@ function resizeHero() { hc.width = window.innerWidth; hc.height = window.innerHe
 resizeHero();
 window.addEventListener('resize', resizeHero);
 
+// --- 時刻による演出変化 ---
+const hour = new Date().getHours();
+let timeOfDay, timeTint, particleColor, bodyBg;
+if (hour >= 5 && hour < 10) {
+  timeOfDay = 'morning';
+  timeTint = 'rgba(255, 220, 180, 0.12)';  // 柔らかい朝日
+  particleColor = [255, 240, 200];
+  bodyBg = '#faf7f2';
+} else if (hour >= 10 && hour < 16) {
+  timeOfDay = 'day';
+  timeTint = 'rgba(255, 255, 240, 0.08)';  // 明るい陽射し
+  particleColor = [255, 255, 255];
+  bodyBg = '#f8f6f3';
+} else if (hour >= 16 && hour < 19) {
+  timeOfDay = 'evening';
+  timeTint = 'rgba(255, 140, 60, 0.15)';   // 夕焼け
+  particleColor = [255, 200, 150];
+  bodyBg = '#f5f0ea';
+} else {
+  timeOfDay = 'night';
+  timeTint = 'rgba(40, 40, 100, 0.2)';     // 夜の静けさ
+  particleColor = [180, 200, 255];
+  bodyBg = '#eeeef4';
+}
+document.body.style.background = bodyBg;
+
 let frame = 0;
 function drawHero() {
   const w = hc.width, h = hc.height, p = hero.palette;
@@ -346,10 +373,15 @@ function drawHero() {
   hctx.fillStyle = grad;
   hctx.fillRect(0, 0, w, h);
 
+  // 時刻によるティント
+  hctx.fillStyle = timeTint;
+  hctx.fillRect(0, 0, w, h);
+
   const t = frame * 0.005;
 
-  // 光の粒がゆっくり漂う
-  for (let i = 0; i < 50; i++) {
+  // 光の粒がゆっくり漂う（時刻で色が変わる）
+  const particleCount = timeOfDay === 'night' ? 30 : 50;
+  for (let i = 0; i < particleCount; i++) {
     const seed = i * 137.5 + dayOfYear;
     const x = (Math.sin(seed + t * (0.3 + i * 0.01)) * 0.5 + 0.5) * w;
     const y = (Math.cos(seed * 0.7 + t * (0.2 + i * 0.008)) * 0.5 + 0.5) * h;
@@ -357,7 +389,7 @@ function drawHero() {
     const alpha = 0.03 + Math.sin(t + seed) * 0.02;
     hctx.beginPath();
     hctx.arc(x, y, r, 0, Math.PI * 2);
-    hctx.fillStyle = `rgba(255,255,255,${Math.max(0, alpha)})`;
+    hctx.fillStyle = `rgba(${particleColor[0]},${particleColor[1]},${particleColor[2]},${Math.max(0, alpha)})`;
     hctx.fill();
   }
 
