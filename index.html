@@ -235,6 +235,7 @@ body {
 
 <div class="collection-bar" id="collectionBar">
   あなたが集めた言葉: <span class="collection-count" id="collectionCount">0</span>
+  <span id="collectionPraise" style="display:block;font-size:0.7rem;opacity:0;transition:opacity 1s ease;margin-top:0.2rem;color:rgba(255,255,255,0.6)"></span>
 </div>
 
 <div class="cards" id="cards"></div>
@@ -533,6 +534,24 @@ function updateCollection() {
   // コレクション数で背景が少し変わる（さりげなく）
   if (count >= 10) document.body.style.background = '#f5f3f0';
   if (count >= 20) document.body.style.background = '#f0eee8';
+
+  // コレクション数に応じたさりげない褒め
+  const praises = [
+    [3, 'いいセンスしてる'],
+    [7, 'もう7つも。素敵なコレクション'],
+    [12, 'あなたが選んだ言葉、全部いい'],
+    [20, '20個。この感性、大事にして'],
+    [30, '言葉のソムリエだね']
+  ];
+  const praiseEl = document.getElementById('collectionPraise');
+  if (praiseEl) {
+    let msg = '';
+    for (let i = praises.length - 1; i >= 0; i--) {
+      if (count >= praises[i][0]) { msg = praises[i][1]; break; }
+    }
+    praiseEl.textContent = msg;
+    praiseEl.style.opacity = msg ? '1' : '0';
+  }
 }
 
 function addHeart(container, idx) {
