@@ -316,6 +316,18 @@ const entries = [
   { words: "今日の空、\nグラデーションがすごい。\n誰が描いてるんだろう。", palette: ['#1a2040','#2a3868','#4a5890','#7080b8','#a0b0d8','#d0e0f0'], sky: true }
 ];
 
+// --- レア言葉（時間帯限定） ---
+const rareEntries = [
+  { words: "深夜3時。\n世界で起きてるの、\n自分だけかもしれない。\nそれが、ちょっとだけ特別。", palette: ['#05051a','#0a0a30','#151550','#252580','#4040b0','#8080d0'], sky: true, time: 'night', rarity: '🌙' },
+  { words: "朝の光が\nカーテンの隙間から入ってきた。\n今日はちゃんと\n世界が始まってる。", palette: ['#f0e0c0','#e8d0a0','#d8c090','#c8b080','#f8f0e0','#fffff0'], sky: true, time: 'morning', rarity: '🌅' },
+  { words: "夕焼けに染まった雲を見て、\n「きれい」と思えた。\nそれだけで\n今日は十分だった気がする。", palette: ['#2a0a10','#5a2020','#a04040','#d07050','#e8a080','#fce0d0'], sky: true, time: 'evening', rarity: '🌇' },
+  { words: "昼下がり。\nあくびが出た。\n平和な証拠。", palette: ['#e0e8f0','#d0d8e8','#c0c8d8','#a8b8c8','#90a0b8','#f0f4f8'], sky: true, time: 'day', rarity: '☀️' },
+];
+
+// 今の時間帯のレア言葉を通常エントリに混ぜる
+const activeRares = rareEntries.filter(r => r.time === timeOfDay);
+activeRares.forEach(r => { r.isRare = true; entries.push(r); });
+
 const today = new Date();
 const dayOfYear = Math.floor((today - new Date(today.getFullYear(),0,0)) / 86400000);
 const todayIdx = dayOfYear % entries.length;
@@ -437,6 +449,12 @@ otherIdxs.forEach((idx, i) => {
     p.textContent = line;
     wordsDiv.appendChild(p);
   });
+  if (e.isRare) {
+    const rareTag = document.createElement('span');
+    rareTag.textContent = e.rarity + ' いまだけ';
+    rareTag.style.cssText = 'display:inline-block;font-size:0.7rem;padding:0.2rem 0.5rem;background:rgba(255,215,0,0.15);border-radius:1rem;margin-bottom:0.3rem;color:#b8860b;';
+    wordsDiv.insertBefore(rareTag, wordsDiv.firstChild);
+  }
   card.appendChild(wordsDiv);
   addHeart(card, idx);
   const shareBtn = document.createElement('button');
