@@ -90,11 +90,15 @@ body {
   border-radius: 16px;
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 1s ease, transform 1s ease;
+  transition: opacity 1s ease, transform 1s ease, box-shadow 0.5s ease;
+  cursor: default;
 }
 .card.visible {
   opacity: 1;
   transform: translateY(0);
+}
+.card.touched {
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.05);
 }
 .card canvas {
   width: 100%;
@@ -456,6 +460,11 @@ otherIdxs.forEach((idx, i) => {
     wordsDiv.insertBefore(rareTag, wordsDiv.firstChild);
   }
   card.appendChild(wordsDiv);
+  // タッチすると一瞬光る
+  card.addEventListener('click', function() {
+    card.classList.add('touched');
+    setTimeout(function() { card.classList.remove('touched'); }, 1500);
+  });
   addHeart(card, idx);
   const shareBtn = document.createElement('button');
   shareBtn.textContent = '𝕏';
