@@ -96,6 +96,18 @@ h1 {
   font-size: 0.8rem;
 }
 .back-link:hover { color: rgba(255,255,255,0.5); }
+.scene-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.5);
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.3s;
+}
+.scene-btn:hover { background: rgba(255,255,255,0.1); }
 </style>
 </head>
 <body>
@@ -127,6 +139,17 @@ h1 {
   <div class="sound-card" data-sound="night" onclick="toggle(this)">
     <div class="sound-icon">🦗</div>
     <div class="sound-label">夜の虫</div>
+  </div>
+</div>
+
+<div style="margin-top:2.5rem;text-align:center;">
+  <p style="font-size:0.75rem;color:rgba(255,255,255,0.25);margin-bottom:0.8rem;">おすすめの組み合わせ</p>
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;justify-content:center;">
+    <button class="scene-btn" onclick="playScene(['rain','wind'])">🌧🍃 雨の日</button>
+    <button class="scene-btn" onclick="playScene(['fire','night'])">🔥🦗 焚き火の夜</button>
+    <button class="scene-btn" onclick="playScene(['wave','bird'])">🌊🐦 海辺の朝</button>
+    <button class="scene-btn" onclick="playScene(['rain','fire'])">🌧🔥 雨と焚き火</button>
+    <button class="scene-btn" onclick="playScene(['wind','bird','wave'])">🍃🐦🌊 自然に包まれる</button>
   </div>
 </div>
 

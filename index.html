@@ -35,6 +35,7 @@ body {
 }
 .hero {
   background: url('images/sunset-hills.jpg') center/cover no-repeat;
+  transition: background-image 2s ease;
 }
 .hero canvas {
   position: absolute;
@@ -360,6 +361,15 @@ if (hour >= 5 && hour < 10) {
   bodyBg = '#eeeef4';
 }
 document.body.style.background = bodyBg;
+
+// 時刻に応じたヒーロー背景画像
+const heroImages = {
+  morning: 'images/morning-light.jpg',
+  day: 'images/sunset-hills.jpg',
+  evening: 'images/dusk-cat.jpg',
+  night: 'images/rainy-window.jpg'
+};
+document.querySelector('.hero').style.backgroundImage = `url('${heroImages[timeOfDay]}')`;
 
 // --- レア言葉（時間帯限定） ---
 const rareEntries = [
